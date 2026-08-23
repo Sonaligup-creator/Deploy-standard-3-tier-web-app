@@ -168,8 +168,9 @@ resource "helm_release" "ingress_nginx" {
   repository       = "https://kubernetes.github.io/ingress-nginx"
   chart            = "ingress-nginx"
   version          = "4.13.2"
-  wait             = true
-  timeout          = 600
+  wait             = false
+  timeout          = 300
+  cleanup_on_fail  = true
 
   depends_on = [kubernetes_namespace.ingress_nginx]
 }
