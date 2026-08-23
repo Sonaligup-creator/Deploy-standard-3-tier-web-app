@@ -4,58 +4,58 @@ pr: none
 parameters:
   - name: tfStateResourceGroup
     type: string
-    default: ''
+    default: 'rg-three-tier-tfstate'
   - name: tfStateStorageAccount
     type: string
-    default: ''
+    default: 'threetiertfstatev06ckt7m'
   - name: tfStateContainer
     type: string
-    default: ''
+    default: 'tfstate'
   - name: tfStateKey
     type: string
-    default: ''
+    default: 'infra-dev.tfstate'
   - name: location
     type: string
-    default: ''
+    default: 'centralindia'
   - name: environment
     type: string
-    default: ''
+    default: 'dev'
   - name: projectName
     type: string
-    default: ''
+    default: 'three-tier'
   - name: resourceGroupName
     type: string
-    default: ''
+    default: 'rg-three-tier-dev'
   - name: aksName
     type: string
-    default: ''
+    default: 'aks-three-tier-dev'
   - name: acrName
     type: string
-    default: ''
+    default: 'acrthreetierdev123'
   - name: keyVaultName
     type: string
-    default: ''
+    default: 'kvthreetierdev123'
   - name: userAssignedIdentityName
     type: string
-    default: ''
+    default: 'uami-three-tier-app'
   - name: kubernetesVersion
     type: string
-    default: ''
+    default: '1.30'
   - name: nodeCount
     type: string
-    default: ''
+    default: '2'
   - name: nodeVmSize
     type: string
-    default: ''
+    default: 'Standard_D2s_v5'
   - name: kubernetesNamespace
     type: string
-    default: ''
+    default: 'three-tier'
   - name: helmReleaseName
     type: string
-    default: ''
+    default: 'three-tier'
   - name: enableClusterAddons
     type: string
-    default: ''
+    default: 'true'
   - name: decommission
     displayName: Decommission resources
     type: string

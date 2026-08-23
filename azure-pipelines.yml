@@ -4,31 +4,31 @@ pr: none
 parameters:
   - name: acrLoginServer
     type: string
-    default: ''
+    default: 'acrthreetierdev123.azurecr.io'
   - name: aksResourceGroup
     type: string
-    default: ''
+    default: 'rg-three-tier-dev'
   - name: aksClusterName
     type: string
-    default: ''
+    default: 'aks-three-tier-dev'
   - name: kubernetesNamespace
     type: string
-    default: ''
+    default: 'three-tier'
   - name: helmReleaseName
     type: string
-    default: ''
+    default: 'three-tier'
   - name: workloadIdentityClientId
     type: string
-    default: ''
+    default: 'REPLACE_WITH_TERRAFORM_WORKLOAD_IDENTITY_CLIENT_ID'
   - name: workloadIdentityTenantId
     type: string
-    default: ''
+    default: 'REPLACE_WITH_AZURE_TENANT_ID'
   - name: keyVaultName
     type: string
-    default: ''
+    default: 'kvthreetierdev123'
   - name: ingressHost
     type: string
-    default: ''
+    default: 'three-tier.example.com'
 
 stages:
   - stage: Build
