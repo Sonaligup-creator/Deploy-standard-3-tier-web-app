@@ -40,7 +40,7 @@ parameters:
     default: 'uami-three-tier-app'
   - name: kubernetesVersion
     type: string
-    default: '1.30'
+    default: '1.35'
   - name: nodeCount
     type: string
     default: '2'

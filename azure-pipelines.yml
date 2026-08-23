@@ -28,7 +28,7 @@ parameters:
     default: 'kvthreetierdev123'
   - name: ingressHost
     type: string
-    default: 'three-tier.example.com'
+    default: 'hotelreservationweb.me'
 
 stages:
   - stage: Build
