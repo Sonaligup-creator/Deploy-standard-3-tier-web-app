@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [bool]$Decommission,
+    [string]$Decommission,
 
     [Parameter(Mandatory = $true)]
     [string]$StateResourceGroup,
@@ -17,7 +17,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-if (-not $Decommission) {
+if ($Decommission -ne 'true') {
     throw 'Infrastructure decommission was not explicitly enabled.'
 }
 

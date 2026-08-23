@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [bool]$Decommission,
+    [string]$Decommission,
 
     [Parameter(Mandatory = $true)]
     [string]$ResourceGroupName,
@@ -10,7 +10,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-if (-not $Decommission) {
+if ($Decommission -ne 'true') {
     throw 'Bootstrap decommission was not explicitly enabled.'
 }
 
