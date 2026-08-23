@@ -1,148 +1,161 @@
-# AKS 3-Tier Assignment Solution
+# 3-Tier Web Application on AKS
 
-This project implements a secure, reusable Helm deployment for a 3-tier app on AKS with Azure DevOps CI/CD.
+This project deploys a 3-tier blogging application on **Azure Kubernetes Service (AKS)** using Helm.
 
-Application layer status:
-- Frontend and backend code are synced from the Jerney main branch.
-- Backend is placed under the `api` folder for chart and pipeline alignment.
-- Only Dockerfile dependency install lines were adjusted to support builds when package-lock files are absent.
+The application consists of:
 
-## What Is Included
+* React frontend
+* Node.js API
+* PostgreSQL database
+* NGINX Ingress
+* Azure Key Vault for secrets
+* Azure Workload Identity
+* Terraform for infrastructure
+* Azure DevOps for CI/CD
 
-- Parent Helm chart with subcharts:
-  - `frontend`
-  - `api`
-  - `postgres`
-- `values.schema.json` to block invalid values and missing resource limits.
-- Pre-install and pre-upgrade Helm hook Job for DB migration.
-- Template conditionals to toggle frontend and postgres on or off.
-- Shared helper templates for naming and ingress path conventions.
-- Secret ingestion via Azure Key Vault Provider for Secrets Store CSI Driver.
-- Azure Workload Identity annotations and service account wiring.
-- NetworkPolicy to allow postgres ingress only from API pods.
-- Ingress path routing:
-  - `/` -> frontend
-  - `/api` -> backend
-- PostgreSQL with PVC.
-- Azure DevOps pipeline for build, lint, and AKS deploy.
+## Architecture
 
-## Do I Need Docker or PostgreSQL Locally?
+```text
+                    Internet
+                       |
+                    HTTPS
+                       |
+                NGINX Ingress
+                 /           \
+                /             \
+          React UI         Node.js API
+                                |
+                           PostgreSQL
+                                |
+                               PVC
+```
 
-- Docker local install: optional.
-- PostgreSQL local install: not required.
-- If Azure DevOps builds images and deploys to AKS, local Docker/Postgres are not needed.
+The frontend is available at `/` and API requests are routed through `/api`.
 
-## Local Prerequisites
+## Helm Structure
 
-- Azure CLI
-- kubectl
-- Helm
+The application uses a parent Helm chart with separate subcharts for each tier.
 
-## One-Time AKS Prerequisites
+```text
+helm/three-tier-app/
+├── Chart.yaml
+├── values.yaml
+├── values.schema.json
+├── templates/
+│   ├── _helpers.tpl
+│   ├── ingress.yaml
+│   ├── migration-job.yaml
+│   └── serviceaccount.yaml
+└── charts/
+    ├── frontend/
+    ├── api/
+    └── postgres/
+```
 
-1. Enable OIDC and Workload Identity on AKS.
-2. Install ingress-nginx.
-3. Install Secrets Store CSI Driver and Azure Key Vault provider.
-4. Create Key Vault secrets:
-   - `db-user`
-   - `db-password`
-   - `db-name`
-5. Grant Key Vault access to the user-assigned managed identity used by workload identity.
+`values.schema.json` is used to validate Helm values and ensures resource requests and limits are provided.
 
-## Deploy Using Helm
+Frontend, API and PostgreSQL deployments can also be enabled or disabled through Helm values.
+
+## Database Migration
+
+A Kubernetes Job is configured as a Helm:
+
+```text
+pre-install
+pre-upgrade
+```
+
+hook to simulate database migration before application deployment/upgrade.
+
+## Security
+
+Database credentials are stored in **Azure Key Vault** instead of being hardcoded in the Helm charts.
+
+```text
+Azure Key Vault
+      |
+Secrets Store CSI Driver
+      |
+Kubernetes Secret
+      |
+Node.js API
+      |
+PostgreSQL
+```
+
+The workloads use **Azure Workload Identity**, so static Azure credentials are not stored inside the pods.
+
+A Kubernetes `NetworkPolicy` restricts PostgreSQL access to the API tier on port `5432`.
+
+## PostgreSQL Storage
+
+PostgreSQL uses a PersistentVolumeClaim so database data is retained when the pod is recreated.
+
+## Ingress
+
+NGINX provides path-based routing:
+
+```text
+/       -> React frontend
+/api    -> Node.js API
+```
+
+The application is exposed through HTTPS.
+
+## CI/CD
+
+Azure DevOps pipelines are used to build the application images, push them to Azure Container Registry and deploy the Helm release to AKS.
+
+Terraform is used for provisioning the Azure infrastructure.
+
+## Deployment Verification
+
+Useful commands:
 
 ```bash
-helm dependency update helm/three-tier-app
+kubectl get pods
+kubectl get svc
+kubectl get ingress
+kubectl get pvc
+kubectl get networkpolicy
+```
+
+Helm validation:
+
+```bash
 helm lint helm/three-tier-app
-helm upgrade --install three-tier helm/three-tier-app \
-  --namespace three-tier --create-namespace \
-  -f helm/three-tier-app/values.yaml \
-  -f helm/three-tier-app/environments/values-dev.yaml
+helm template three-tier helm/three-tier-app
 ```
 
-## Pipeline
+## Screenshots
 
-File: `azure-pipelines.yml`
+### Application
 
-Pipeline stages:
+<img width="1907" height="871" alt="image" src="https://github.com/user-attachments/assets/5ba844ab-220f-4bea-bf54-ddde3a37ff2c" />
 
-1. Build and push API/frontend images to ACR.
-2. Helm validation (`helm lint` + `helm template`).
-3. Helm deploy to AKS.
 
-Update service connections and variable values before running.
+### AKS Resources
 
-## Terraform Bootstrap and Infra
+<img width="1245" height="196" alt="image" src="https://github.com/user-attachments/assets/9efdd4d1-5964-41dc-a2cb-83ba7e339165" />
 
-Two Terraform layers are included:
 
-- `terraform/bootstrap`: creates remote state backend (resource group, storage account, container).
-- `terraform/infra`: creates AKS, ACR, Key Vault, workload identity, federated credentials, and optional ingress addon.
 
-### Local bootstrap run
+### Azure DevOps Pipeline
 
-```bash
-cd terraform/bootstrap
-cp terraform.tfvars.example terraform.tfvars
-terraform init
-terraform plan -out=tfplan
-terraform apply tfplan
-```
+<img width="1895" height="978" alt="image" src="https://github.com/user-attachments/assets/e65c8da7-edfb-42c7-9821-cdc8e91f5ecb" />
 
-Save the output values:
 
-- `resource_group_name`
-- `storage_account_name`
-- `container_name`
+### PostgreSQL PVC and NetworkPolicy
 
-### Local infra run
+<img width="1672" height="540" alt="image" src="https://github.com/user-attachments/assets/473ae5de-b333-433a-9b12-740db2f11696" />
 
-1. Copy and edit variables.
 
-```bash
-cd terraform/infra
-cp terraform.tfvars.example terraform.tfvars
-```
 
-2. Set unique names for:
+### Azure Key Vault
 
-- `acr_name`
-- `key_vault_name`
+<img width="1892" height="865" alt="image" src="https://github.com/user-attachments/assets/eaf7501f-6145-459a-9056-13c9a55e9a94" />
 
-3. Set DB values (`db_user`, `db_password`, `db_name`).
 
-4. Initialize with backend settings from bootstrap outputs.
+## Tech Stack
 
-```bash
-terraform init \
-  -backend-config="resource_group_name=<bootstrap-rg>" \
-  -backend-config="storage_account_name=<bootstrap-sa>" \
-  -backend-config="container_name=tfstate" \
-  -backend-config="key=infra-dev.tfstate"
-terraform plan -out=tfplan
-terraform apply tfplan
-```
-
-5. Optional addon deployment with Terraform:
-
-- Set `enable_cluster_addons = true` in `terraform.tfvars`
-- Re-run `terraform plan/apply`
-
-This deploys:
-
-- namespace `three-tier`
-- ingress-nginx controller via Helm provider
-
-## Azure DevOps Terraform Pipelines
-
-Additional pipeline files are included:
-
-- `azure-pipelines-bootstrap.yml`
-- `azure-pipelines-infra.yml`
-
-### Run order
-
-1. Run `azure-pipelines-bootstrap.yml` first.
-2. Copy bootstrap output storage account name into `tfStateStorageAccount` variable in `azure-pipelines-infra.yml` (or set it in pipeline variables).
-3. Set `dbPassword` as a secret variable in Azure DevOps.
-4. Run `azure-pipelines-infra.yml`.
+**Azure | AKS | Kubernetes | Helm | Terraform | Azure DevOps | Docker | NGINX | Azure Key Vault | React | Node.js | PostgreSQL**
