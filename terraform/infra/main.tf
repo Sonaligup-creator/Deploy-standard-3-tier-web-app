@@ -176,7 +176,7 @@ resource "helm_release" "ingress_nginx" {
     controller = {
       service = {
         annotations = {
-          "service.beta.kubernetes.io/azure-load-balancer-health-probe-protocol" = "Tcp"
+          "service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path" = "/healthz"
         }
       }
     }
