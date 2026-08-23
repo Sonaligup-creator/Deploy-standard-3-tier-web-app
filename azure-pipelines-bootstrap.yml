@@ -68,10 +68,6 @@ stages:
           vmImage: ubuntu-latest
         steps:
           - checkout: self
-          - task: TerraformInstaller@1
-            displayName: Install Terraform
-            inputs:
-              terraformVersion: latest
           - task: AzureCLI@2
             displayName: Delete bootstrap resources
             inputs:
