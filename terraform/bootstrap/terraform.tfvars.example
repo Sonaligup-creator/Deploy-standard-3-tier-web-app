@@ -1,4 +1,4 @@
-location                    = "eastus"
+location                    = "centralindia"
 resource_group_name         = "rg-three-tier-tfstate"
 storage_account_name_prefix = "threetiertfstate"
 container_name              = "tfstate"

@@ -1,7 +1,7 @@
 variable "location" {
   description = "Azure region for bootstrap resources"
   type        = string
-  default     = "eastus"
+  default     = "centralindia"
 }
 
 variable "resource_group_name" {
