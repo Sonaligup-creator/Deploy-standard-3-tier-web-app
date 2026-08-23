@@ -172,5 +172,15 @@ resource "helm_release" "ingress_nginx" {
   timeout          = 300
   cleanup_on_fail  = true
 
+  values = [yamlencode({
+    controller = {
+      service = {
+        annotations = {
+          "service.beta.kubernetes.io/azure-load-balancer-health-probe-protocol" = "Tcp"
+        }
+      }
+    }
+  })]
+
   depends_on = [kubernetes_namespace.ingress_nginx]
 }
