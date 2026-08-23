@@ -1,5 +1,21 @@
 data "azurerm_client_config" "current" {}
 
+provider "kubernetes" {
+  host                   = azurerm_kubernetes_cluster.this.kube_config[0].host
+  client_certificate     = base64decode(azurerm_kubernetes_cluster.this.kube_config[0].client_certificate)
+  client_key             = base64decode(azurerm_kubernetes_cluster.this.kube_config[0].client_key)
+  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.this.kube_config[0].cluster_ca_certificate)
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = azurerm_kubernetes_cluster.this.kube_config[0].host
+    client_certificate     = base64decode(azurerm_kubernetes_cluster.this.kube_config[0].client_certificate)
+    client_key             = base64decode(azurerm_kubernetes_cluster.this.kube_config[0].client_key)
+    cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.this.kube_config[0].cluster_ca_certificate)
+  }
+}
+
 locals {
   common_tags = merge(var.tags, {
     project     = var.project_name
@@ -131,4 +147,29 @@ resource "azurerm_federated_identity_credential" "postgres" {
   issuer    = azurerm_kubernetes_cluster.this.oidc_issuer_url
   audience  = ["api://AzureADTokenExchange"]
   subject   = "system:serviceaccount:${var.namespace}:${local.postgres_service_account_name}"
+}
+
+resource "kubernetes_namespace" "ingress_nginx" {
+  count = var.enable_cluster_addons ? 1 : 0
+
+  metadata {
+    name = "ingress-nginx"
+  }
+
+  depends_on = [azurerm_kubernetes_cluster.this]
+}
+
+resource "helm_release" "ingress_nginx" {
+  count = var.enable_cluster_addons ? 1 : 0
+
+  name             = "ingress-nginx"
+  namespace        = "ingress-nginx"
+  create_namespace = false
+  repository       = "https://kubernetes.github.io/ingress-nginx"
+  chart            = "ingress-nginx"
+  version          = "4.13.2"
+  wait             = true
+  timeout          = 600
+
+  depends_on = [kubernetes_namespace.ingress_nginx]
 }
