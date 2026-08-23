@@ -83,7 +83,6 @@ stages:
 
           - script: |
               set -euo pipefail
-              helm dependency update helm/three-tier-app
               helm lint helm/three-tier-app
               helm template three-tier helm/three-tier-app \
                 -f helm/three-tier-app/values.yaml \
@@ -126,7 +125,6 @@ stages:
                       az aks get-credentials --resource-group ${{ parameters.aksResourceGroup }} --name ${{ parameters.aksClusterName }} --overwrite-existing
                       kubectl create namespace ${{ parameters.kubernetesNamespace }} --dry-run=client -o yaml | kubectl apply -f -
 
-                      helm dependency update helm/three-tier-app
                       helm upgrade --install ${{ parameters.helmReleaseName }} helm/three-tier-app \
                         --namespace ${{ parameters.kubernetesNamespace }} \
                         -f helm/three-tier-app/values.yaml \
