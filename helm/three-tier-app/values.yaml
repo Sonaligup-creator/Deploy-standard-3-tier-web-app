@@ -1,0 +1,84 @@
+global:
+  nameOverride: ""
+  fullnameOverride: ""
+  ingress:
+    enabled: true
+    className: nginx
+    host: three-tier.local
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "2m"
+  paths:
+    frontend: /
+    api: /api
+  database:
+    secretName: app-db-credentials
+    port: 5432
+    externalHost: ""
+  workloadIdentity:
+    enabled: true
+    clientId: "00000000-0000-0000-0000-000000000000"
+    tenantId: "00000000-0000-0000-0000-000000000000"
+    keyVaultName: "your-keyvault-name"
+    secretProviderClassName: app-kv-secrets
+
+frontend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: youracr.azurecr.io/three-tier-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+    targetPort: 80
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+api:
+  enabled: true
+  replicaCount: 2
+  database:
+    host: ""
+  image:
+    repository: youracr.azurecr.io/three-tier-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 5000
+    targetPort: 5000
+  serviceAccount:
+    create: true
+    name: ""
+  resources:
+    requests:
+      cpu: 150m
+      memory: 192Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+postgres:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClassName: managed-csi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

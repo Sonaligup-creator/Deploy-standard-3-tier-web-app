@@ -1,0 +1,22 @@
+# Production values are supplied by the Azure DevOps variable group
+# three-tier-app-config through TF_VAR_* environment variables.
+# Do not add real values or credentials to this file.
+#
+# Required variable names:
+# location
+# environment
+# project_name
+# resource_group_name
+# aks_name
+# acr_name
+# key_vault_name
+# user_assigned_identity_name
+# kubernetes_version
+# node_count
+# node_vm_size
+# namespace
+# release_name
+# enable_cluster_addons
+# db_user
+# db_password (secret)
+# db_name

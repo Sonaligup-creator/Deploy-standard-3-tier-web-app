@@ -1,0 +1,39 @@
+trigger: none
+pr: none
+
+parameters:
+  - name: azureSubscription
+    type: string
+    default: ''
+
+variables:
+  - group: three-tier-app-config
+
+stages:
+  - stage: Bootstrap
+    displayName: Terraform Bootstrap
+    jobs:
+      - job: BootstrapState
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - task: TerraformInstaller@1
+            displayName: Install Terraform
+            inputs:
+              terraformVersion: latest
+
+          - task: AzureCLI@2
+            displayName: Terraform init/plan/apply bootstrap
+            inputs:
+              azureSubscription: '${{ parameters.azureSubscription }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                cd terraform/bootstrap
+                cp terraform.tfvars.example terraform.tfvars
+                terraform init
+                terraform plan -out=tfplan
+                terraform apply -auto-approve tfplan

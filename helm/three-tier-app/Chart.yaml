@@ -1,0 +1,20 @@
+apiVersion: v2
+name: three-tier-app
+description: Secure 3-tier app on AKS using parent-child Helm charts
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+dependencies:
+  - name: frontend
+    version: 0.1.0
+    repository: file://charts/frontend
+    condition: frontend.enabled
+  - name: api
+    version: 0.1.0
+    repository: file://charts/api
+    condition: api.enabled
+  - name: postgres
+    version: 0.1.0
+    repository: file://charts/postgres
+    condition: postgres.enabled

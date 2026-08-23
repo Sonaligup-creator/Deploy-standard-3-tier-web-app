@@ -1,0 +1,150 @@
+trigger: none
+pr: none
+
+parameters:
+  - name: acrServiceConnection
+    type: string
+    default: ''
+  - name: azureSubscription
+    type: string
+    default: ''
+  - name: acrLoginServer
+    type: string
+    default: ''
+  - name: aksResourceGroup
+    type: string
+    default: ''
+  - name: aksClusterName
+    type: string
+    default: ''
+  - name: kubernetesNamespace
+    type: string
+    default: ''
+  - name: helmReleaseName
+    type: string
+    default: ''
+  - name: workloadIdentityClientId
+    type: string
+    default: ''
+  - name: workloadIdentityTenantId
+    type: string
+    default: ''
+  - name: keyVaultName
+    type: string
+    default: ''
+  - name: ingressHost
+    type: string
+    default: ''
+
+variables:
+  - group: three-tier-app-config
+
+stages:
+  - stage: Build
+    displayName: Build and Push Images
+    jobs:
+      - job: BuildImages
+        displayName: Build API and Frontend Images
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - task: Docker@2
+            displayName: Build and push API image
+            inputs:
+              containerRegistry: '${{ parameters.acrServiceConnection }}'
+              repository: 'three-tier-api'
+              command: 'buildAndPush'
+              Dockerfile: 'api/Dockerfile'
+              buildContext: 'api'
+              tags: |
+                $(Build.SourceVersion)
+                latest
+
+          - task: Docker@2
+            displayName: Build and push Frontend image
+            inputs:
+              containerRegistry: '${{ parameters.acrServiceConnection }}'
+              repository: 'three-tier-frontend'
+              command: 'buildAndPush'
+              Dockerfile: 'frontend/Dockerfile'
+              buildContext: 'frontend'
+              tags: |
+                $(Build.SourceVersion)
+                latest
+
+  - stage: ValidateHelm
+    displayName: Validate Helm Governance
+    dependsOn: Build
+    jobs:
+      - job: LintAndTemplate
+        displayName: Helm Schema and Template Validation
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - task: HelmInstaller@1
+            displayName: Install Helm
+            inputs:
+              helmVersionToInstall: 'latest'
+
+          - script: |
+              set -euo pipefail
+              helm dependency update helm/three-tier-app
+              helm lint helm/three-tier-app
+              helm template three-tier helm/three-tier-app \
+                -f helm/three-tier-app/values.yaml \
+                -f helm/three-tier-app/environments/values-dev.yaml \
+                --set api.image.repository=${{ parameters.acrLoginServer }}/three-tier-api \
+                --set api.image.tag=$(Build.SourceVersion) \
+                --set frontend.image.repository=${{ parameters.acrLoginServer }}/three-tier-frontend \
+                --set frontend.image.tag=$(Build.SourceVersion)
+            displayName: Run Helm lint and render
+
+  - stage: DeployAKS
+    displayName: Deploy to AKS with Helm
+    dependsOn: ValidateHelm
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: HelmDeploy
+        displayName: Helm Upgrade Install
+        environment: aks-dev
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: HelmInstaller@1
+                  displayName: Install Helm
+                  inputs:
+                    helmVersionToInstall: 'latest'
+
+                - task: AzureCLI@2
+                  displayName: Helm deploy to AKS
+                  inputs:
+                    azureSubscription: '${{ parameters.azureSubscription }}'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      set -euo pipefail
+                      az aks get-credentials --resource-group ${{ parameters.aksResourceGroup }} --name ${{ parameters.aksClusterName }} --overwrite-existing
+                      kubectl create namespace ${{ parameters.kubernetesNamespace }} --dry-run=client -o yaml | kubectl apply -f -
+
+                      helm dependency update helm/three-tier-app
+                      helm upgrade --install ${{ parameters.helmReleaseName }} helm/three-tier-app \
+                        --namespace ${{ parameters.kubernetesNamespace }} \
+                        -f helm/three-tier-app/values.yaml \
+                        -f helm/three-tier-app/environments/values-dev.yaml \
+                        --set global.ingress.host=${{ parameters.ingressHost }} \
+                        --set global.workloadIdentity.clientId=${{ parameters.workloadIdentityClientId }} \
+                        --set global.workloadIdentity.tenantId=${{ parameters.workloadIdentityTenantId }} \
+                        --set global.workloadIdentity.keyVaultName=${{ parameters.keyVaultName }} \
+                        --set api.image.repository=${{ parameters.acrLoginServer }}/three-tier-api \
+                        --set api.image.tag=$(Build.SourceVersion) \
+                        --set frontend.image.repository=${{ parameters.acrLoginServer }}/three-tier-frontend \
+                        --set frontend.image.tag=$(Build.SourceVersion)

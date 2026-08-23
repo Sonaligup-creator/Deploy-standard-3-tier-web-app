@@ -1,0 +1,117 @@
+trigger: none
+pr: none
+
+parameters:
+  - name: azureSubscription
+    type: string
+    default: ''
+  - name: tfStateResourceGroup
+    type: string
+    default: ''
+  - name: tfStateStorageAccount
+    type: string
+    default: ''
+  - name: tfStateContainer
+    type: string
+    default: ''
+  - name: tfStateKey
+    type: string
+    default: ''
+  - name: location
+    type: string
+    default: ''
+  - name: environment
+    type: string
+    default: ''
+  - name: projectName
+    type: string
+    default: ''
+  - name: resourceGroupName
+    type: string
+    default: ''
+  - name: aksName
+    type: string
+    default: ''
+  - name: acrName
+    type: string
+    default: ''
+  - name: keyVaultName
+    type: string
+    default: ''
+  - name: userAssignedIdentityName
+    type: string
+    default: ''
+  - name: kubernetesVersion
+    type: string
+    default: ''
+  - name: nodeCount
+    type: string
+    default: ''
+  - name: nodeVmSize
+    type: string
+    default: ''
+  - name: kubernetesNamespace
+    type: string
+    default: ''
+  - name: helmReleaseName
+    type: string
+    default: ''
+  - name: enableClusterAddons
+    type: string
+    default: ''
+
+variables:
+  - group: three-tier-app-config
+
+stages:
+  - stage: Infra
+    displayName: Terraform Infra
+    jobs:
+      - job: PlanApplyInfra
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - task: TerraformInstaller@1
+            displayName: Install Terraform
+            inputs:
+              terraformVersion: latest
+
+          - task: AzureCLI@2
+            displayName: Terraform init/plan/apply infra
+            inputs:
+              azureSubscription: '${{ parameters.azureSubscription }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                cd terraform/infra
+
+                terraform init \
+                  -backend-config="resource_group_name=${{ parameters.tfStateResourceGroup }}" \
+                  -backend-config="storage_account_name=${{ parameters.tfStateStorageAccount }}" \
+                  -backend-config="container_name=${{ parameters.tfStateContainer }}" \
+                  -backend-config="key=${{ parameters.tfStateKey }}"
+
+                terraform plan -out=tfplan
+                terraform apply -auto-approve tfplan
+                terraform output
+            env:
+              TF_VAR_location: ${{ parameters.location }}
+              TF_VAR_environment: ${{ parameters.environment }}
+              TF_VAR_project_name: ${{ parameters.projectName }}
+              TF_VAR_resource_group_name: ${{ parameters.resourceGroupName }}
+              TF_VAR_aks_name: ${{ parameters.aksName }}
+              TF_VAR_acr_name: ${{ parameters.acrName }}
+              TF_VAR_key_vault_name: ${{ parameters.keyVaultName }}
+              TF_VAR_user_assigned_identity_name: ${{ parameters.userAssignedIdentityName }}
+              TF_VAR_kubernetes_version: ${{ parameters.kubernetesVersion }}
+              TF_VAR_node_count: ${{ parameters.nodeCount }}
+              TF_VAR_node_vm_size: ${{ parameters.nodeVmSize }}
+              TF_VAR_namespace: ${{ parameters.kubernetesNamespace }}
+              TF_VAR_release_name: ${{ parameters.helmReleaseName }}
+              TF_VAR_enable_cluster_addons: ${{ parameters.enableClusterAddons }}
+              TF_VAR_db_user: $(dbUser)
+              TF_VAR_db_password: $(dbPassword)
+              TF_VAR_db_name: $(dbName)
