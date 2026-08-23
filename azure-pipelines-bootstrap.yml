@@ -2,16 +2,30 @@ trigger: none
 pr: none
 
 parameters:
-  - name: azureSubscription
+  - name: location
     type: string
     default: ''
-
-variables:
-  - group: three-tier-app-config
+  - name: bootstrapResourceGroupName
+    type: string
+    default: ''
+  - name: storageAccountNamePrefix
+    type: string
+    default: ''
+  - name: bootstrapContainerName
+    type: string
+    default: ''
+  - name: decommission
+    displayName: Decommission resources
+    type: string
+    default: 'false'
+    values:
+      - 'false'
+      - 'true'
 
 stages:
   - stage: Bootstrap
     displayName: Terraform Bootstrap
+    condition: eq('${{ parameters.decommission }}', 'false')
     jobs:
       - job: BootstrapState
         pool:
@@ -27,13 +41,45 @@ stages:
           - task: AzureCLI@2
             displayName: Terraform init/plan/apply bootstrap
             inputs:
-              azureSubscription: '${{ parameters.azureSubscription }}'
+              azureSubscription: 'sc-azure'
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
                 set -euo pipefail
                 cd terraform/bootstrap
-                cp terraform.tfvars.example terraform.tfvars
                 terraform init
                 terraform plan -out=tfplan
                 terraform apply -auto-approve tfplan
+                terraform output
+            env:
+              TF_VAR_location: ${{ parameters.location }}
+              TF_VAR_resource_group_name: ${{ parameters.bootstrapResourceGroupName }}
+              TF_VAR_storage_account_name_prefix: ${{ parameters.storageAccountNamePrefix }}
+              TF_VAR_container_name: ${{ parameters.bootstrapContainerName }}
+
+  - stage: DecommissionBootstrap
+    displayName: Decommission Terraform Bootstrap
+    dependsOn: Bootstrap
+    condition: and(always(), eq('${{ parameters.decommission }}', 'true'))
+    jobs:
+      - job: DestroyBootstrap
+        displayName: Destroy bootstrap state resources
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+          - task: TerraformInstaller@1
+            displayName: Install Terraform
+            inputs:
+              terraformVersion: latest
+          - task: AzureCLI@2
+            displayName: Delete bootstrap resources
+            inputs:
+              azureSubscription: 'sc-azure'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                pwsh -NoProfile -File scripts/decommission-bootstrap.ps1 \
+                  -Decommission '${{ parameters.decommission }}' \
+                  -ResourceGroupName '${{ parameters.bootstrapResourceGroupName }}'

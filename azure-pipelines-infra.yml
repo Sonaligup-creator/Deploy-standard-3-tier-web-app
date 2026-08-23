@@ -2,9 +2,6 @@ trigger: none
 pr: none
 
 parameters:
-  - name: azureSubscription
-    type: string
-    default: ''
   - name: tfStateResourceGroup
     type: string
     default: ''
@@ -59,6 +56,13 @@ parameters:
   - name: enableClusterAddons
     type: string
     default: ''
+  - name: decommission
+    displayName: Decommission resources
+    type: string
+    default: 'false'
+    values:
+      - 'false'
+      - 'true'
 
 variables:
   - group: three-tier-app-config
@@ -66,6 +70,7 @@ variables:
 stages:
   - stage: Infra
     displayName: Terraform Infra
+    condition: eq('${{ parameters.decommission }}', 'false')
     jobs:
       - job: PlanApplyInfra
         pool:
@@ -81,7 +86,7 @@ stages:
           - task: AzureCLI@2
             displayName: Terraform init/plan/apply infra
             inputs:
-              azureSubscription: '${{ parameters.azureSubscription }}'
+              azureSubscription: 'sc-azure'
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
@@ -97,6 +102,54 @@ stages:
                 terraform plan -out=tfplan
                 terraform apply -auto-approve tfplan
                 terraform output
+            env:
+              TF_VAR_location: ${{ parameters.location }}
+              TF_VAR_environment: ${{ parameters.environment }}
+              TF_VAR_project_name: ${{ parameters.projectName }}
+              TF_VAR_resource_group_name: ${{ parameters.resourceGroupName }}
+              TF_VAR_aks_name: ${{ parameters.aksName }}
+              TF_VAR_acr_name: ${{ parameters.acrName }}
+              TF_VAR_key_vault_name: ${{ parameters.keyVaultName }}
+              TF_VAR_user_assigned_identity_name: ${{ parameters.userAssignedIdentityName }}
+              TF_VAR_kubernetes_version: ${{ parameters.kubernetesVersion }}
+              TF_VAR_node_count: ${{ parameters.nodeCount }}
+              TF_VAR_node_vm_size: ${{ parameters.nodeVmSize }}
+              TF_VAR_namespace: ${{ parameters.kubernetesNamespace }}
+              TF_VAR_release_name: ${{ parameters.helmReleaseName }}
+              TF_VAR_enable_cluster_addons: ${{ parameters.enableClusterAddons }}
+              TF_VAR_db_user: $(dbUser)
+              TF_VAR_db_password: $(dbPassword)
+              TF_VAR_db_name: $(dbName)
+
+  - stage: DecommissionInfra
+    displayName: Decommission Terraform Infrastructure
+    dependsOn: Infra
+    condition: and(always(), eq('${{ parameters.decommission }}', 'true'))
+    jobs:
+      - job: DestroyInfra
+        displayName: Destroy infrastructure from remote state
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+          - task: TerraformInstaller@1
+            displayName: Install Terraform
+            inputs:
+              terraformVersion: latest
+          - task: AzureCLI@2
+            displayName: Terraform destroy from remote state
+            inputs:
+              azureSubscription: 'sc-azure'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                pwsh -NoProfile -File scripts/decommission-infra.ps1 \
+                  -Decommission '${{ parameters.decommission }}' \
+                  -StateResourceGroup '${{ parameters.tfStateResourceGroup }}' \
+                  -StateStorageAccount '${{ parameters.tfStateStorageAccount }}' \
+                  -StateContainer '${{ parameters.tfStateContainer }}' \
+                  -StateKey '${{ parameters.tfStateKey }}'
             env:
               TF_VAR_location: ${{ parameters.location }}
               TF_VAR_environment: ${{ parameters.environment }}
