@@ -29,6 +29,8 @@ spec:
           ports:
             - containerPort: {{ .Values.service.port }}
           env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
             - name: POSTGRES_USER_FILE
               value: /mnt/secrets-store/db-user
             - name: POSTGRES_PASSWORD_FILE
