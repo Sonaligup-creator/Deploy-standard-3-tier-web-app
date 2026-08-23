@@ -6,6 +6,9 @@ metadata:
   labels:
     {{- include "three-tier-app.labels" . | nindent 4 }}
   annotations:
+    {{- if .Values.global.ingress.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.global.ingress.tls.clusterIssuer | quote }}
+    {{- end }}
     {{- with .Values.global.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
@@ -32,5 +35,11 @@ spec:
                 name: {{ include "three-tier-app.tierServiceName" (dict "root" . "tier" "api") }}
                 port:
                   number: {{ .Values.api.service.port }}
+      {{- if .Values.global.ingress.tls.enabled }}
+      tls:
+        - hosts:
+            - {{ .Values.global.ingress.host }}
+          secretName: {{ .Values.global.ingress.tls.secretName }}
+      {{- end }}
           {{- end }}
 {{- end }}

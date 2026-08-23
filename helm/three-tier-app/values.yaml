@@ -5,6 +5,11 @@ global:
     enabled: true
     className: nginx
     host: three-tier.local
+    tls:
+      enabled: true
+      secretName: three-tier-tls
+      clusterIssuer: letsencrypt-prod
+      email: sonaligup2000@gmail.com
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: "2m"
   paths:

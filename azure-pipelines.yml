@@ -29,6 +29,9 @@ parameters:
   - name: ingressHost
     type: string
     default: 'hotelreservationweb.me'
+  - name: acmeEmail
+    type: string
+    default: 'sonaligup2000@gmail.com'
 
 stages:
   - stage: Build
@@ -90,7 +93,8 @@ stages:
                 --set api.image.repository=${{ parameters.acrLoginServer }}/three-tier-api \
                 --set api.image.tag=$(Build.SourceVersion) \
                 --set frontend.image.repository=${{ parameters.acrLoginServer }}/three-tier-frontend \
-                --set frontend.image.tag=$(Build.SourceVersion)
+                --set frontend.image.tag=$(Build.SourceVersion) \
+                --set global.ingress.tls.email=${{ parameters.acmeEmail }}
             displayName: Run Helm lint and render
 
   - stage: DeployAKS
@@ -130,6 +134,7 @@ stages:
                         -f helm/three-tier-app/values.yaml \
                         -f helm/three-tier-app/environments/values-dev.yaml \
                         --set global.ingress.host=${{ parameters.ingressHost }} \
+                        --set global.ingress.tls.email=${{ parameters.acmeEmail }} \
                         --set global.workloadIdentity.clientId=${{ parameters.workloadIdentityClientId }} \
                         --set global.workloadIdentity.tenantId=${{ parameters.workloadIdentityTenantId }} \
                         --set global.workloadIdentity.keyVaultName=${{ parameters.keyVaultName }} \

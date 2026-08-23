@@ -184,3 +184,33 @@ resource "helm_release" "ingress_nginx" {
 
   depends_on = [kubernetes_namespace.ingress_nginx]
 }
+
+resource "kubernetes_namespace" "cert_manager" {
+  count = var.enable_cluster_addons ? 1 : 0
+
+  metadata {
+    name = "cert-manager"
+  }
+
+  depends_on = [azurerm_kubernetes_cluster.this]
+}
+
+resource "helm_release" "cert_manager" {
+  count = var.enable_cluster_addons ? 1 : 0
+
+  name             = "cert-manager"
+  namespace        = "cert-manager"
+  create_namespace = false
+  repository       = "https://charts.jetstack.io"
+  chart            = "cert-manager"
+  version          = "v1.17.2"
+  wait             = false
+  timeout          = 300
+  cleanup_on_fail  = true
+  set {
+    name  = "crds.enabled"
+    value = "true"
+  }
+
+  depends_on = [kubernetes_namespace.cert_manager]
+}

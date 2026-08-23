@@ -32,6 +32,16 @@
             "enabled": { "type": "boolean" },
             "className": { "type": "string" },
             "host": { "type": "string", "minLength": 1 },
+            "tls": {
+              "type": "object",
+              "required": ["enabled", "secretName", "clusterIssuer", "email"],
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "secretName": { "type": "string", "minLength": 1 },
+                "clusterIssuer": { "type": "string", "minLength": 1 },
+                "email": { "type": "string", "format": "email" }
+              }
+            },
             "annotations": { "type": "object" }
           }
         },
