@@ -35,11 +35,11 @@ spec:
                 name: {{ include "three-tier-app.tierServiceName" (dict "root" . "tier" "api") }}
                 port:
                   number: {{ .Values.api.service.port }}
-      {{- if .Values.global.ingress.tls.enabled }}
-      tls:
-        - hosts:
-            - {{ .Values.global.ingress.host }}
-          secretName: {{ .Values.global.ingress.tls.secretName }}
-      {{- end }}
           {{- end }}
+  {{- if .Values.global.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.global.ingress.host }}
+      secretName: {{ .Values.global.ingress.tls.secretName }}
+  {{- end }}
 {{- end }}
