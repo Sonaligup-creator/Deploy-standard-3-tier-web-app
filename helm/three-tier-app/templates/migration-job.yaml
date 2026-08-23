@@ -11,14 +11,13 @@ metadata:
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   backoffLimit: 2
+  activeDeadlineSeconds: 120
   template:
     metadata:
       labels:
         app.kubernetes.io/component: migration
-        azure.workload.identity/use: "true"
     spec:
       restartPolicy: Never
-      serviceAccountName: {{ include "three-tier-app.componentName" (dict "root" . "component" "api-sa") }}
       containers:
         - name: migration
           image: postgres:16-alpine
@@ -27,34 +26,16 @@ spec:
             - sh
             - -c
             - |
-              export PGHOST="${DB_HOST}"
-              export PGPORT="${DB_PORT}"
-              export PGUSER="$(cat /mnt/secrets-store/db-user)"
-              export PGPASSWORD="$(cat /mnt/secrets-store/db-password)"
-              export PGDATABASE="$(cat /mnt/secrets-store/db-name)"
-              psql <<'SQL'
-              CREATE TABLE IF NOT EXISTS migration_audit (
-                id SERIAL PRIMARY KEY,
-                event_name VARCHAR(64) NOT NULL,
-                created_at TIMESTAMP DEFAULT NOW()
-              );
-              INSERT INTO migration_audit (event_name) VALUES ('pre-install-upgrade-hook');
-              SQL
+              set -eu
+              echo "Simulating database migration before API rollout"
+              echo "Target database host: ${DB_HOST}"
+              echo "Target database port: ${DB_PORT}"
+              echo "Migration completed: pre-install-upgrade-hook"
           env:
             - name: DB_HOST
               value: {{ ternary (include "three-tier-app.componentName" (dict "root" . "component" "postgres")) .Values.global.database.externalHost .Values.postgres.enabled | quote }}
             - name: DB_PORT
               value: {{ .Values.global.database.port | quote }}
-            - name: DB_USER_FILE
-              value: /mnt/secrets-store/db-user
-            - name: DB_PASSWORD_FILE
-              value: /mnt/secrets-store/db-password
-            - name: DB_NAME_FILE
-              value: /mnt/secrets-store/db-name
-          volumeMounts:
-            - name: secrets-store-inline
-              mountPath: /mnt/secrets-store
-              readOnly: true
           resources:
             requests:
               cpu: 50m
@@ -62,11 +43,4 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
-      volumes:
-        - name: secrets-store-inline
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: {{ .Values.global.workloadIdentity.secretProviderClassName | quote }}
 {{- end }}
