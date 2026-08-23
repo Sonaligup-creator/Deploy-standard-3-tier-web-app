@@ -20,7 +20,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "three-tier-app.componentName" (dict "root" . "component" "frontend") }}
+                name: {{ include "three-tier-app.tierServiceName" (dict "root" . "tier" "frontend") }}
                 port:
                   number: {{ .Values.frontend.service.port }}
           {{- end }}
@@ -29,7 +29,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "three-tier-app.componentName" (dict "root" . "component" "api") }}
+                name: {{ include "three-tier-app.tierServiceName" (dict "root" . "tier" "api") }}
                 port:
                   number: {{ .Values.api.service.port }}
           {{- end }}

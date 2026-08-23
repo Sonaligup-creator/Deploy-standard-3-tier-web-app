@@ -14,6 +14,10 @@
 {{- printf "%s-%s" (include "three-tier-app.fullname" .root) .component | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "three-tier-app.tierServiceName" -}}
+{{- printf "%s-%s-%s" .root.Release.Name .tier .tier | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- define "three-tier-app.labels" -}}
 app.kubernetes.io/name: {{ include "three-tier-app.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
