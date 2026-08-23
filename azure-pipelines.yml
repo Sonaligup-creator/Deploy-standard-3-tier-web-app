@@ -139,3 +139,35 @@ stages:
                         --set api.image.tag=$(Build.SourceVersion) \
                         --set frontend.image.repository=${{ parameters.acrLoginServer }}/three-tier-frontend \
                         --set frontend.image.tag=$(Build.SourceVersion)
+
+                      echo ""
+                      echo "========== Three-Tier Deployment Details =========="
+                      echo "AKS resource group: ${{ parameters.aksResourceGroup }}"
+                      echo "AKS cluster: ${{ parameters.aksClusterName }}"
+                      echo "Namespace: ${{ parameters.kubernetesNamespace }}"
+                      echo "Helm release: ${{ parameters.helmReleaseName }}"
+                      echo "Ingress host: ${{ parameters.ingressHost }}"
+                      echo ""
+                      echo "Pods:"
+                      kubectl get pods -n ${{ parameters.kubernetesNamespace }} -o wide
+                      echo ""
+                      echo "Services:"
+                      kubectl get svc -n ${{ parameters.kubernetesNamespace }}
+                      echo ""
+                      echo "Ingress:"
+                      kubectl get ingress -n ${{ parameters.kubernetesNamespace }} -o wide
+                      echo ""
+                      ingress_ip="$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
+                      if [ -z "$ingress_ip" ]; then
+                        ingress_ip="$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)"
+                      fi
+                      if [ -n "$ingress_ip" ]; then
+                        echo "Ingress public address: $ingress_ip"
+                        echo "Website URL: http://${{ parameters.ingressHost }}"
+                        echo "API health URL: http://${{ parameters.ingressHost }}/api/health"
+                        echo "Namecheap A record target: $ingress_ip"
+                      else
+                        echo "Ingress public address: pending"
+                        echo "Run: kubectl get svc ingress-nginx-controller -n ingress-nginx"
+                      fi
+                      echo "=================================================="
