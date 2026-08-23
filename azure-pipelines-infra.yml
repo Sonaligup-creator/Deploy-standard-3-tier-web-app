@@ -43,10 +43,10 @@ parameters:
     default: '1.35'
   - name: nodeCount
     type: string
-    default: '2'
+    default: '1'
   - name: nodeVmSize
     type: string
-    default: 'Standard_D2s_v5'
+    default: 'Standard_B2s'
   - name: kubernetesNamespace
     type: string
     default: 'three-tier'

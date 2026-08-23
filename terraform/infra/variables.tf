@@ -47,19 +47,19 @@ variable "user_assigned_identity_name" {
 variable "kubernetes_version" {
   description = "AKS kubernetes version"
   type        = string
-  default     = "1.30"
+  default     = "1.35"
 }
 
 variable "node_count" {
   description = "Default node count"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "node_vm_size" {
   description = "AKS node vm size"
   type        = string
-  default     = "Standard_D2s_v5"
+  default     = "Standard_B2s"
 }
 
 variable "namespace" {
