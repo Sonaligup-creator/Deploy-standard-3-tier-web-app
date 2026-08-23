@@ -22,8 +22,8 @@ locals {
     environment = var.environment
   })
 
-  api_service_account_name      = "${var.release_name}-three-tier-app-api-sa"
-  postgres_service_account_name = "${var.release_name}-three-tier-app-postgres-sa"
+  api_service_account_name      = "${var.release_name}-api-api-sa"
+  postgres_service_account_name = "${var.release_name}-postgres-postgres-sa"
 }
 
 resource "azurerm_resource_group" "this" {
