@@ -59,7 +59,7 @@ variable "node_count" {
 variable "node_vm_size" {
   description = "AKS node vm size"
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2s_v2"
 }
 
 variable "namespace" {
