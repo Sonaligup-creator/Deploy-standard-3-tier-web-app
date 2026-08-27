@@ -136,6 +136,8 @@ helm template three-tier helm/three-tier-app
 
 ### AKS Resources
 
+<img width="1905" height="967" alt="image" src="https://github.com/user-attachments/assets/5bdb3a00-74f2-4267-a218-c764ececbd23" />
+
 <img width="1245" height="196" alt="image" src="https://github.com/user-attachments/assets/9efdd4d1-5964-41dc-a2cb-83ba7e339165" />
 
 
