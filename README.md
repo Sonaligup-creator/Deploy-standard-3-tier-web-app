@@ -141,6 +141,7 @@ helm template three-tier helm/three-tier-app
 
 <img width="1245" height="196" alt="image" src="https://github.com/user-attachments/assets/9efdd4d1-5964-41dc-a2cb-83ba7e339165" />
 
+<img width="1870" height="941" alt="image" src="https://github.com/user-attachments/assets/690a671a-3528-4abf-91bd-bd4e024cb743" />
 
 
 ### Azure DevOps Pipeline
