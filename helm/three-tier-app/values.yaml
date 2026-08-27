@@ -28,7 +28,7 @@ global:
 
 frontend:
   enabled: true
-  replicaCount: 2
+  replicaCount: 4
   image:
     repository: youracr.azurecr.io/three-tier-frontend
     tag: latest
@@ -46,7 +46,7 @@ frontend:
 
 api:
   enabled: true
-  replicaCount: 2
+  replicaCount: 4
   database:
     host: ""
   image:
